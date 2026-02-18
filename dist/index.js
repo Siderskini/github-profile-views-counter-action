@@ -15969,6 +15969,7 @@ module.exports = verifyCommits;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const recordSummaryFile = __nccwpck_require__(7140);
+const fs = __nccwpck_require__(5630);
 let markdownTemplate = function () {
     const ACTION_NAME = 'GitHub Profile Views Counter';
     const ACTION_URL = 'https://github.com/gayanvoice/github-profile-views-counter';
@@ -16042,24 +16043,24 @@ let markdownTemplate = function () {
         return table;
     }
     let summaryPage = async function (fileName, actionName, actionUrl, authorName, authorUrl, response, insightsRepository) {
-        let lastUpdate = getDate();
-        let tableComponent = await createSummaryPageTableComponent(fileName, response, insightsRepository);
+        const START_MARKER = '<!-- PROFILE_VIEWS_BADGE_START -->';
+        const END_MARKER = '<!-- PROFILE_VIEWS_BADGE_END -->';
         let repositoryUrl = `https://github.com/${response[0].ownerLogin}/${insightsRepository}`;
         let svgBadge = `[![Image of ${repositoryUrl}](${repositoryUrl}/blob/master/svg/profile/badge.svg)](${repositoryUrl})`;
-        let markdown =  `## [🚀 ${actionName}](${actionUrl})\n`;
-        markdown = markdown + `**${actionName}** is an opensource project that powered entirely by  \`GitHub Actions\` to fetch and store insights of repositories.\n`;
-        markdown = markdown + `It uses \`GitHub API\` to fetch the insight data of your repositories and commits changes into a separate repository.\n\n`
-        markdown = markdown + `The project created and maintained by [gayanvoice](https://github.com/gayanvoice). Don't forget to follow him on [GitHub](https://github.com/gayanvoice), [Twitter](https://twitter.com/gayanvoice), and [Medium](https://gayanvoice.medium.com/).\n\n`;
-        markdown = markdown + tableComponent;
-        markdown = markdown + `<small><i>Last updated on ${lastUpdate}</i></small>\n\n`;
-        markdown = markdown +   `## ✂️Copy and 📋 Paste\n`;
-        markdown = markdown + `### Total Views Badge\n`;
-        markdown = markdown + `${svgBadge}\n\n`;
-        markdown = markdown + `\`\`\`readme\n`;
-        markdown = markdown + `${svgBadge}\n`;
-        markdown = markdown + `\`\`\`\n`;
-        markdown = markdown + footerComponent(actionName, actionUrl, authorName, authorUrl);
-        return markdown;
+        let existingReadme = '';
+        try {
+            existingReadme = await fs.readFile('README.md', 'utf8');
+        } catch (e) {
+            return `### Total Views Badge\n${START_MARKER}\n${svgBadge}\n${END_MARKER}\n`;
+        }
+        const startIdx = existingReadme.indexOf(START_MARKER);
+        const endIdx = existingReadme.indexOf(END_MARKER);
+        if (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
+            return existingReadme.slice(0, startIdx + START_MARKER.length) +
+                '\n' + svgBadge + '\n' +
+                existingReadme.slice(endIdx);
+        }
+        return existingReadme;
     }
     let menuComponent = function (request, readmeUrl) {
         if (request.advancedMode) {
@@ -16149,6 +16150,7 @@ let markdownTemplate = function () {
     };
 }();
 module.exports = markdownTemplate
+
 
 /***/ }),
 

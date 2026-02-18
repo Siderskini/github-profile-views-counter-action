@@ -1,4 +1,5 @@
 const recordSummaryFile = require('../../helper/cache/summary-cache');
+const fs = require('fs-extra');
 let markdownTemplate = function () {
     const ACTION_NAME = 'GitHub Profile Views Counter';
     const ACTION_URL = 'https://github.com/gayanvoice/github-profile-views-counter';
@@ -72,22 +73,24 @@ let markdownTemplate = function () {
         return table;
     }
     let summaryPage = async function (fileName, actionName, actionUrl, authorName, authorUrl, response, insightsRepository) {
-        let lastUpdate = getDate();
-        let tableComponent = await createSummaryPageTableComponent(fileName, response, insightsRepository);
+        const START_MARKER = '<!-- PROFILE_VIEWS_BADGE_START -->';
+        const END_MARKER = '<!-- PROFILE_VIEWS_BADGE_END -->';
         let repositoryUrl = `https://github.com/${response[0].ownerLogin}/${insightsRepository}`;
         let svgBadge = `[![Image of ${repositoryUrl}](${repositoryUrl}/blob/master/svg/profile/badge.svg)](${repositoryUrl})`;
-        let markdown =  `## Hi there 👋`
-        markdown = markdown + `- 🔭 I’m currently working on making opensource software`;
-        markdown = markdown + `- 🌱 I’m currently learning how to use AI Agents`;
-        markdown = markdown + `- 👯 I’m looking to collaborate on anything`;
-        markdown = markdown + `- 🤔 I’m looking for help with product feedback`;
-        markdown = markdown + `- 💬 Ask me about agentic development`;
-        markdown = markdown + `- 📫 Reach me on LinkedIn`;
-        markdown = markdown + `- 😄 Pronouns: He/Him`;
-        markdown = markdown + `- ⚡ Fun fact: The last time I wrote something in C was around a decade ago\n`;
-        markdown = markdown + `### Total Views Badge\n`;
-        markdown = markdown + `${svgBadge}\n\n`;
-        return markdown;
+        let existingReadme = '';
+        try {
+            existingReadme = await fs.readFile('README.md', 'utf8');
+        } catch (e) {
+            return `### Total Views Badge\n${START_MARKER}\n${svgBadge}\n${END_MARKER}\n`;
+        }
+        const startIdx = existingReadme.indexOf(START_MARKER);
+        const endIdx = existingReadme.indexOf(END_MARKER);
+        if (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
+            return existingReadme.slice(0, startIdx + START_MARKER.length) +
+                '\n' + svgBadge + '\n' +
+                existingReadme.slice(endIdx);
+        }
+        return existingReadme;
     }
     let menuComponent = function (request, readmeUrl) {
         if (request.advancedMode) {
